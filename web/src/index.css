@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  color-scheme: dark;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.19 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.19 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.76 0.115 211);
+  --primary-foreground: oklch(0.14 0 0);
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.26 0.02 211);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.59 0.2 25);
+  --border: oklch(0.29 0 0);
+  --input: oklch(0.29 0 0);
+  --ring: oklch(0.76 0.115 211);
+  --radius: 0.5rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+::selection {
+  background: oklch(0.76 0.115 211 / 0.25);
+}
+.mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+.console-shell {
+  background: #0e0e10;
+}
+.section-label {
+  color: #a1a1aa;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 transparent;
+}
+.board-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 14px;
+}
+.session-column {
+  flex: 0 0 360px;
+  min-width: 360px;
+  overflow: hidden;
+  border: 1px solid #303035;
+  border-radius: 12px;
+  background: #171719;
+  transition: border-color 150ms ease;
+}
+.session-column-selected {
+  border-color: oklch(0.76 0.115 211 / 0.7);
+}
+.question-viewport {
+  height: 650px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-snap-type: y proximity;
+}
+.question-slide {
+  min-height: 614px;
+  padding: 12px 12px 22px;
+  scroll-snap-align: start;
+}
+.history-round {
+  scroll-snap-align: start;
+}
+.turn-dot {
+  display: inline-flex;
+  height: 15px;
+  width: 15px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #71717a;
+  border-radius: 50%;
+  background: transparent;
+  color: #a1a1aa;
+}
+.turn-dot-active {
+  border-color: #67e8f9;
+  background: #67e8f9;
+  color: #111113;
+}
+.turn-dot-done:not(.turn-dot-active) {
+  border-color: #67e8f9;
+  color: #67e8f9;
+}
+.field-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #a1a1aa;
+  font-size: 11px;
+  font-weight: 600;
+}
+.form-select {
+  height: 36px;
+  width: 100%;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  background: #111113;
+  padding: 0 10px;
+  color: #f4f4f5;
+  font-size: 12px;
+  outline: none;
+}
+.form-select:focus {
+  border-color: var(--primary);
+}
+.add-column {
+  width: 120px;
+}
+@media (max-width: 480px) {
+  .session-column { flex-basis: 330px; min-width: 330px; }
+}

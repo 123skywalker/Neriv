@@ -69,11 +69,47 @@ def test_session_history_is_visible_on_next_turn_only() -> None:
     service.decide(_ad_hoc(session_id, "第一问"))
     assert _projected_state(service) == {"notes": "独立背景"}
     assert service.get_session(session_id)["state"]["history_summary"] == [
-        {"q": "第一问", "a": "科技", "r": 0.0},
+        {"id": "第一问", "q": "第一问", "a": "科技", "r": 0.0},
     ]
     service.decide(_ad_hoc(session_id, "第二问"))
     assert _projected_state(service)["history_summary"] == [
-        {"q": "第一问", "a": "科技", "r": 0.0},
+        {"id": "第一问", "q": "第一问", "a": "科技", "r": 0.0},
+    ]
+
+
+def test_current_turn_rerun_does_not_project_or_duplicate_history() -> None:
+    """同一 decision_id 重跑时 Engine 看不到本条摘要，会话里只保留一条。"""
+
+    service = _service()
+    session_id = service.create_session({"state": {"notes": "独立背景"}})["session_id"]
+    service.decide(_ad_hoc(session_id, "第一问"))
+    service.decide(_ad_hoc(session_id, "第一问"))
+    assert _projected_state(service) == {"notes": "独立背景"}
+    assert service.get_session(session_id)["state"]["history_summary"] == [
+        {"id": "第一问", "q": "第一问", "a": "科技", "r": 0.0},
+    ]
+
+
+def test_adding_question_strips_current_turn_history() -> None:
+    """整轮再交时去掉请求内已有 id，新题看不到本轮已写出的答案。"""
+
+    service = _service()
+    session_id = service.create_session({"state": {"notes": "独立背景"}})["session_id"]
+    service.decide(_ad_hoc(session_id, "第一问"))
+    service.decide(AgentRequest.from_dict({
+        "session_id": session_id,
+        "decisions": [
+            {"decision_id": "第一问", "ad_hoc": {
+                "type": "CHOICE", "instructions": "第一问", "candidates": ["体育", "科技"],
+            }},
+            {"decision_id": "第二问", "ad_hoc": {
+                "type": "CHOICE", "instructions": "第二问", "candidates": ["体育", "科技"],
+            }},
+        ],
+    }))
+    assert _projected_state(service) == {"notes": "独立背景"}
+    assert [item["id"] for item in service.get_session(session_id)["state"]["history_summary"]] == [
+        "第一问", "第二问",
     ]
 
 
@@ -120,7 +156,7 @@ def test_session_history_truncates_question_and_records_reject() -> None:
     service.decide(_ad_hoc(session_id, "长" * 180))
     state = service.get_session(session_id)["state"]
     assert state["notes"] == "保留背景"
-    assert state["history_summary"] == [{"q": "长" * 100, "a": "reject", "r": .8}]
+    assert state["history_summary"] == [{"id": "长" * 180, "q": "长" * 100, "a": "reject", "r": .8}]
 
 
 def test_plugin_does_not_project_session_history_without_declaration() -> None:

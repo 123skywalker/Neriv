@@ -1,3 +1,5 @@
+"""service.py, Agent 会话决策与 history_summary 写回。"""
+
 from __future__ import annotations
 
 import time
@@ -87,6 +89,29 @@ class PendingAction:
     tenant_id: str
     session_id: str | None = None
     created_at: float = field(default_factory=time.time)
+
+
+def _without_current_history(data: dict[str, Any], current_ids: set[str]) -> dict[str, Any]:
+    """去掉本次 decision_id 对应的摘要，供本轮重跑/加题投影使用。
+
+    @param data 当前 Snapshot 数据
+    @param current_ids 本次请求中的 decision_id
+    @return 不共享原列表的投影用副本；若无剩余摘要则不含该键
+    """
+
+    stored = data.get("history_summary")
+    if not isinstance(stored, list) or not current_ids:
+        return data
+    kept = [
+        item for item in stored
+        if not (isinstance(item, dict) and item.get("id") in current_ids)
+    ]
+    view = dict(data)
+    if kept:
+        view["history_summary"] = kept
+    else:
+        view.pop("history_summary", None)
+    return view
 
 
 class AgentService:
@@ -219,9 +244,17 @@ class AgentService:
                 self.policy.get(decision.descriptor.policy_ref)
             by_id = {item.descriptor.id: item for item in decisions}
             fields = {field for item in decisions for field in item.descriptor.required_state}
+            projected = snapshot
+            if session:
+                projected = StateSnapshot(
+                    snapshot.snapshot_id, snapshot.version,
+                    _without_current_history(
+                        snapshot.data, {call.decision_id for call in request.decisions},
+                    ),
+                )
             if any(call.ad_hoc is not None for call in request.decisions):
-                fields.update(snapshot.data)
-            canonical_state = state_store.project(snapshot, fields)
+                fields.update(projected.data)
+            canonical_state = state_store.project(projected, fields)
             questions: list[CompiledQuestion] = []
             resolved: dict[str, list[CompiledCapability]] = {}
             history_sources: dict[str, tuple[str, dict[str, str]]] = {}
@@ -285,15 +318,22 @@ class AgentService:
             if session and response.status == "OK" and response.results:
                 latest = session.state.snapshot()
                 stored = latest.data.get("history_summary")
-                history = list(stored) if isinstance(stored, list) else []
+                current_ids = set(history_sources)
+                history = [
+                    item for item in (list(stored) if isinstance(stored, list) else [])
+                    if not (isinstance(item, dict) and item.get("id") in current_ids)
+                ]
                 appended = False
                 for result in response.results:
                     if result.status != "OK":
                         continue
                     prompt, candidates = history_sources[result.question_id]
-                    history.append({"q": prompt[:100],
-                                    "a": candidates.get(result.selected_candidate_id, "reject"),
-                                    "r": result.reject_probability})
+                    history.append({
+                        "id": result.question_id,
+                        "q": prompt[:100],
+                        "a": candidates.get(result.selected_candidate_id, "reject"),
+                        "r": result.reject_probability,
+                    })
                     appended = True
                 if appended:
                     updated = session.state.update({"history_summary": self._trim_history(latest, history)})

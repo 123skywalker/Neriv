@@ -45,4 +45,4 @@ Web 源码在 `web/`，构建产物写入 `jev_like/agent/static/`，由 FastAPI
 
 ## 许可证
 
-Neriv 自研代码按 [Apache License 2.0](LICENSE) 发布。适配权重在 [Hugging Face 模型仓库](https://huggingface.co/linyaocai/Neriv-v2) 同样按 Apache-2.0 发布；Qwen3-0.6B 底座遵循其原始 Apache-2.0 许可证。
+Neriv 自研代码按 [Apache License 2.0](LICENSE) 发布；此授权不代表重新授权第三方作品。Neriv 自研的 LoRA、决策头与校准参数在 [Hugging Face 模型仓库](https://huggingface.co/linyaocai/Neriv-v2) 按 Apache-2.0 发布。Qwen3-0.6B 原始权重与 tokenizer 仍由上游按其原始许可证授权。

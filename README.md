@@ -42,3 +42,7 @@ cd web && npm ci && npm run build
 ```
 
 Web 源码在 `web/`，构建产物写入 `jev_like/agent/static/`，由 FastAPI 挂载到 `/ui`。
+
+## 许可证
+
+Neriv 自研代码按 [Apache License 2.0](LICENSE) 发布。适配权重在 [Hugging Face 模型仓库](https://huggingface.co/linyaocai/Neriv-v2) 同样按 Apache-2.0 发布；Qwen3-0.6B 底座遵循其原始 Apache-2.0 许可证。

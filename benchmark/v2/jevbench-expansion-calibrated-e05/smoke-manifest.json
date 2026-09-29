@@ -1,0 +1,21 @@
+{
+  "adapter": "typesafe",
+  "charged_usd": 0.02,
+  "cost_basis": null,
+  "dataset_hash": "6d141d324a016b58ccbcc290e272588e2026625f39155717415dc4270fc2023e",
+  "delay_s": 0.0,
+  "endpoint": "http://127.0.0.1:8000",
+  "finished_utc": "2026-09-28T10:10:23.589241+00:00",
+  "key_env_used": false,
+  "n_attempted": 1,
+  "n_planned": 1,
+  "price_input_per_m": null,
+  "price_output_per_m": null,
+  "request_options": {},
+  "requested_model": null,
+  "resolved_models": [
+    "neriv"
+  ],
+  "run_label": "expansion-calibrated-e05",
+  "started_utc": "2026-09-28T10:10:19.941797+00:00"
+}

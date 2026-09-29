@@ -1,0 +1,3 @@
+{"event": "cap", "cap_usd": 15.0, "ts": 1790590220.0260508}
+{"event": "reserve", "reservation_id": "e0d5eebb703747ecaf0ef4cc79467d3a", "reserved_usd": 0.02, "ts": 1790590220.034331, "meta": {"task_id": "original-policy-01-0", "adapter": "typesafe"}}
+{"event": "settle", "reservation_id": "e0d5eebb703747ecaf0ef4cc79467d3a", "charged_usd": 0.02, "ts": 1790590223.5517452, "meta": {"task_id": "original-policy-01-0", "basis": "unknown"}}

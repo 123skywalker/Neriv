@@ -86,6 +86,7 @@ class NerivDecisionModel(nn.Module):
             tokenizer, "Qwen/Qwen3-0.6B", revision, revision, max_sequence_tokens
         )
         model = cls(backbone, SetPointerHead(hidden_size), contract)
+        model.attention_implementation = load_kwargs["attn_implementation"]
         return model, contract
 
     @staticmethod
@@ -147,7 +148,12 @@ class NerivDecisionModel(nn.Module):
         query = self.encode(query_input_ids, query_attention_mask)
         flat_ids = candidate_input_ids.reshape(batch_size * candidate_count, sequence_length)
         flat_mask = candidate_attention_mask.reshape(batch_size * candidate_count, sequence_length)
-        candidates = self.encode(flat_ids, flat_mask).reshape(batch_size, candidate_count, -1)
+        rows = batch_size * candidate_count
+        chunk = 4 if sequence_length > 256 else rows
+        pieces = []
+        for start in range(0, rows, chunk):
+            pieces.append(self.encode(flat_ids[start:start + chunk], flat_mask[start:start + chunk]))
+        candidates = torch.cat(pieces, dim=0).reshape(batch_size, candidate_count, -1)
         pointer_dtype = next(self.pointer.parameters()).dtype
         query = query.to(pointer_dtype)
         candidates = candidates.to(pointer_dtype)
@@ -179,6 +185,30 @@ class NerivDecisionModel(nn.Module):
         self.temperature.copy_(state["temperature"].to(self.temperature.device))
 
 
+FROZEN_NULL_KEYS = ("pointer.null_embedding", "pointer.null_projection.weight")
+
+
+def fill_frozen_null_from_parent(state: dict[str, torch.Tensor], missing: list[str] | set[str],
+                                 config: dict[str, Any]) -> dict[str, torch.Tensor]:
+    """把蒸馏冻结且未写入 student 的 Null 权重从父 checkpoint 补回。"""
+
+    needed = [key for key in FROZEN_NULL_KEYS if key in missing or key not in state]
+    if not needed:
+        return state
+    parent = Path(str(config.get("parent_checkpoint") or config.get("old_teacher_checkpoint") or ""))
+    parent_file = parent / "model.pt"
+    if not parent_file.is_file():
+        raise RuntimeError(f"checkpoint 缺少冻结 Null {needed}，且找不到父节点: {parent}")
+    parent_state = torch.load(parent_file, map_location="cpu", weights_only=True)
+    absent = [key for key in needed if key not in parent_state]
+    if absent:
+        raise RuntimeError(f"父 checkpoint 也缺少 Null: {absent}")
+    filled = dict(state)
+    for key in needed:
+        filled[key] = parent_state[key]
+    return filled
+
+
 def load_training_checkpoint(
     checkpoint: str | Path,
     model_path: str | Path | None = None,
@@ -205,6 +235,9 @@ def load_training_checkpoint(
     if expected_contract and expected_contract.get("contract_hash") != contract.contract_hash:
         raise RuntimeError("CHECKPOINT_CONTRACT_MISMATCH")
     missing, unexpected = model.load_state_dict(state, strict=False)
+    if any(name in FROZEN_NULL_KEYS for name in missing):
+        state = fill_frozen_null_from_parent(state, missing, config)
+        missing, unexpected = model.load_state_dict(state, strict=False)
     trainable = {name for name, parameter in model.named_parameters() if parameter.requires_grad}
     missing_trainable = trainable.intersection(missing)
     if missing_trainable or unexpected:
